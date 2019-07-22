@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<extension version="2.5" type="plugin" group="vmpayment" method="upgrade">
+    <name>VIPPS Express Checkout</name>
+    <creationDate>July 15 2019</creationDate>
+    <author>Daniel Paez</author>
+    <authorUrl>http://www.tepuy.no</authorUrl>
+    <copyright>Copyright (C) 2019 Tepuy AS. All rights reserved.</copyright>
+    <license>http://www.gnu.org/licenses/gpl-2.0.html GNU/GPL</license>
+    <version>1.0</version>
+    <description>
+        Vipps plugin
+    </description>
+    <files>
+        <filename plugin="vipps">vipps.php</filename>
+        <folder>language</folder>
+    </files>
+    <vmconfig>
+        <fields name="params">
+            <fieldset name="basic" addfieldpath="/administrator/components/com_virtuemart/fields">
+                <field type="text" name="merchantSerialNumber" size="50" label="VMPAYMENT_VIPPS_MERCHANT" description="VMPAYMENT_VIPPS_MERCHANT_DESC"/>
+                <field type="text" name="clientId" size="100" label="VMPAYMENT_VIPPS_CLIENT_ID" description="VMPAYMENT_VIPPS_CLIENT_ID"/>
+                <field type="text" name="clientSecret" size="100" label="VMPAYMENT_VIPPS_CLIENT_SECRET" description="VMPAYMENT_VIPPS_CLIENT_SECRET"/>
+                <field type="text" name="Ocp-Apim-Subscription-Key" size="100" label="VMPAYMENT_VIPPS_OCPAPIM_SUBSCRIPTION_KEY" description="VMPAYMENT_VIPPS_OCPAPIM_SUBSCRIPTION_KEY"/>
+                <field type="text" name="callbackPrefix" size="100" label="VMPAYMENT_VIPPS_CALLPREFIX" description="VMPAYMENT_VIPPS_CALLPREFIX"/>
+                <field type="text" name="shippingDetailsPrefix" size="100" label="VMPAYMENT_VIPPS_SHIPPING_DETAILS_PREFIX" description="VMPAYMENT_VIPPS_SHIPPINGDETAILSPREFIX"/>
+                <field type="text" name="consentRemovalPrefix" size="100" label="VMPAYMENT_VIPPS_CONSENT_REMOVAL_PREFIX" description="VMPAYMENT_VIPPS_CONSENT_REMOVAL_PREFIX"/>
+                <field type="text" name="fallBack" size="100" label="VMPAYMENT_VIPPS_FALLBACK" description="VMPAYMENT_VIPPS_FALLBACK"/>
+                <field type="text" name="baseUrl" size="100" label="VMPAYMENT_VIPPS_BASE_URL" description="VMPAYMENT_VIPPS_BASE_URL"/>
+
+
+                <field name="status_pending" type="vmorderstate" scope="com_virtuemart" default="P" label="VMPAYMENT_VIPPS_STATUS_PENDING" description="VMPAYMENT_VIPPS_STATUS_PENDING_EXPLAIN" />
+                <field name="status_success" type="vmorderstate" scope="com_virtuemart" default="C" label="VMPAYMENT_VIPPS_STATUS_SUCCESS" description="VMPAYMENT_VIPPS_STATUS_SUCCESS_EXPLAIN" />
+                <field name="status_canceled" type="vmorderstate" scope="com_virtuemart" default="X" label="VMPAYMENT_VIPPS_STATUS_FAILED" description="VMPAYMENT_VIPPS_STATUS_FAILED_EXPLAIN" />
+            </fieldset>
+        </fields>
+    </vmconfig>
+</extension>
