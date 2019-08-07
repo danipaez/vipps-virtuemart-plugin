@@ -106,17 +106,17 @@ class plgVmPaymentVipps extends vmPSPlugin
      */
     function getAccessToken($url, $payment_params)
     {
-        $secret = explode('=', $payment_params[2], 2);
+        $secret = explode('=', $payment_params[2],2);
         $clientSecret = str_replace('"', "", $secret[1]);
 
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_URL, $url);
         curl_setopt($curl, CURLOPT_POST, 1);
-        curl_setopt($curl, CURLOPT_POSTFIELDS, "");
+        curl_setopt($curl, CURLOPT_POSTFIELDS,"");
         curl_setopt($curl, CURLOPT_HTTPHEADER, array(
-            "Ocp-Apim-Subscription-Key: " . $payment_params['Ocp-Apim-Subscription-Key'],
-            "client_id: " . $payment_params['clientId'],
-            "client_secret: " . $clientSecret,
+            "Ocp-Apim-Subscription-Key: ".$payment_params['Ocp-Apim-Subscription-Key'],
+            "client_id: ".$payment_params['clientId'],
+            "client_secret: ".$clientSecret,
         ));
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
         $response = curl_exec($curl);
@@ -132,8 +132,7 @@ class plgVmPaymentVipps extends vmPSPlugin
 
     }
 
-    function getVippsParameters($paymentMethodId)
-    {
+    function getVippsParameters($paymentMethodId) {
 
         vmLanguage::loadJLang('com_virtuemart', true);
         vmLanguage::loadJLang('com_virtuemart_orders', TRUE);
@@ -146,7 +145,7 @@ class plgVmPaymentVipps extends vmPSPlugin
 
         $payment_params = explode("|", $method->payment_params);
         $payment_params = preg_replace('/\\\\/', '', $payment_params);
-        $secret = explode('=', $payment_params[2], 2);
+        $secret = explode('=', $payment_params[2],2);
         $clientSecret = str_replace('"', "", $secret[1]);
         foreach ($payment_params as $payment_param) {
             if (empty($payment_param)) {
@@ -167,11 +166,11 @@ class plgVmPaymentVipps extends vmPSPlugin
     function plgVmConfirmedOrder($cart, $order)
     {
 
-        if (!($method = $this->getVmPluginMethod($order["details"]["BT"]->virtuemart_paymentmethod_id)))
+        if(!($method = $this->getVmPluginMethod($order["details"]["BT"]->virtuemart_paymentmethod_id)))
             return null;
         // Another method was selected, do nothing
 
-        if (!$this->selectedThisElement($method->payment_element))
+        if(!$this->selectedThisElement($method->payment_element))
             return false;
 
         $payment_params = $this->getVippsParameters($order["details"]["BT"]->virtuemart_paymentmethod_id);
@@ -266,11 +265,11 @@ class plgVmPaymentVipps extends vmPSPlugin
             'merchantInfo' =>
                 array(
                     'merchantSerialNumber' => $payment_params['merchantSerialNumber'],
-                    'callbackPrefix' => $payment_params['callbackPrefix'] . '/index.php?callback=1&option=com_virtuemart&view=pluginresponse&task=pluginresponsereceived&on=' . $order['details']['BT']->virtuemart_order_id . '&paymentMethodId=' . $order["details"]["BT"]->virtuemart_paymentmethod_id,
+                    'callbackPrefix'=> $payment_params['callbackPrefix'].'/index.php?callback=1&option=com_virtuemart&view=pluginresponse&task=pluginresponsereceived&on='.$order['details']['BT']->virtuemart_order_id.'&paymentMethodId='.$order["details"]["BT"]->virtuemart_paymentmethod_id,
                     'shippingDetailsPrefix' => $payment_params['shippingDetailsPrefix'],
                     'consentRemovalPrefix' => $payment_params['consentRemovalPrefix'],
                     'paymentType' => 'eComm Express Payment',
-                    'fallBack' => $payment_params['callbackPrefix'] . '/index.php?callback=1&option=com_virtuemart&view=pluginresponse&task=pluginresponsereceived&on=' . $order['details']['BT']->virtuemart_order_id . '&paymentMethodId=' . $order["details"]["BT"]->virtuemart_paymentmethod_id,
+                    'fallBack' => $payment_params['callbackPrefix'].'/index.php?callback=1&option=com_virtuemart&view=pluginresponse&task=pluginresponsereceived&on='.$order['details']['BT']->virtuemart_order_id.'&paymentMethodId='.$order["details"]["BT"]->virtuemart_paymentmethod_id,
                     'authToken' => '{{$guid}}',
                     'isApp' => false,
                 ),
@@ -281,7 +280,7 @@ class plgVmPaymentVipps extends vmPSPlugin
             'transaction' =>
                 array(
                     'orderId' => $dbValues['order_number'],
-                    'amount' => ($dbValues['order_salesPrice'] * 100),
+                    'amount' => ($dbValues['order_salesPrice']*100),
                     'transactionText' => 'Order number: ' . $dbValues['order_number'],
                 ),
         );
@@ -289,7 +288,7 @@ class plgVmPaymentVipps extends vmPSPlugin
         $token = $this->getAccessToken($baseUrl . "accesstoken/get", $payment_params);
         $tokenResponse = json_decode($token, true);
 
-        $initiateVippsPayment = callVippsPaymentAPI('POST', $baseUrl . 'ecomm/v2/payments/', json_encode($data_array), $tokenResponse, $payment_params);
+        $initiateVippsPayment = callVippsPaymentAPI('POST', $baseUrl.'ecomm/v2/payments/', json_encode($data_array), $tokenResponse, $payment_params);
         $response = json_decode($initiatePayment, true);
         $cart->emptyCart();
         vRequest::setVar('html', $html);
@@ -338,144 +337,186 @@ class plgVmPaymentVipps extends vmPSPlugin
     function plgVmOnPaymentResponseReceived(&$html = "")
 
     {
+
         $payment_data = $_GET;
         $virtuemart_order_id = $payment_data['on'];
         $paymentMethodId = $payment_data['paymentMethodId'];
 
-        $payment_params = $this->getVippsParameters($paymentMethodId);
+        if ($paymentMethodId == 6) {
+
+            $payment_params = $this->getVippsParameters($paymentMethodId);
 
 
-        function callVippsStatusAPI($url, $payment_params, $token)
-        {
-            $curl = curl_init();
-            curl_setopt($curl, CURLOPT_POSTFIELDS, "");
-            curl_setopt($curl, CURLOPT_URL, $url);
-            curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "GET");
-            curl_setopt($curl, CURLOPT_HTTPHEADER, array(
-                // Request headers
-                'Authorization: ' . $token["token_type"] . ' ' . $token["access_token"],
-                'X-Request-Id: ',
-                'X-TimeStamp: ',
-                'Content-Type: application/json',
-                'Ocp-Apim-Subscription-Key: ' . $payment_params['Ocp-Apim-Subscription-Key'],
-            ));
-            curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+            function callVippsStatusAPI($url, $payment_params, $token)
+            {
+                $curl = curl_init();
+                curl_setopt($curl, CURLOPT_POSTFIELDS, "");
+                curl_setopt($curl, CURLOPT_URL, $url);
+                curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "GET");
+                curl_setopt($curl, CURLOPT_HTTPHEADER, array(
+                    // Request headers
+                    'Authorization: ' . $token["token_type"] . ' ' . $token["access_token"],
+                    'X-Request-Id: ',
+                    'X-TimeStamp: ',
+                    'Content-Type: application/json',
+                    'Ocp-Apim-Subscription-Key: ' . $payment_params['Ocp-Apim-Subscription-Key'],
+                ));
+                curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
 
-            $result = curl_exec($curl);
-            if (!$result) {
-                die("Connection Failure");
+                $result = curl_exec($curl);
+                if (!$result) {
+                    die("Connection Failure");
+                }
+
+                curl_close($curl);
+
+                return $result;
             }
 
-            curl_close($curl);
+            $token = $this->getAccessToken($payment_params['baseUrl'] . "accesstoken/get", $payment_params);
+            $token = json_decode($token, true);
+            $checkVippsOrderStatus = callVippsStatusAPI($payment_params['baseUrl'] . '/ecomm/v2/payments/'.$virtuemart_order_id.'/status', $payment_params, $token);
+            $statusResponse = json_decode($checkVippsOrderStatus, true);
+            $statusResponse = $statusResponse['transactionInfo']['status'];
 
-            return $result;
-        }
+            if($statusResponse == "RESERVE") {
 
-        $token = $this->getAccessToken($payment_params['baseUrl'] . "accesstoken/get", $payment_params);
-        $token = json_decode($token, true);
-        $checkVippsOrderStatus = callVippsStatusAPI($payment_params['baseUrl'] . '/ecomm/v2/payments/' . $virtuemart_order_id . '/status', $payment_params, $token);
-        $statusResponse = json_decode($checkVippsOrderStatus, true);
-        $statusResponse = $statusResponse['transactionInfo']['status'];
+                $email_sent = "SELECT email_sent FROM #__virtuemart_orders WHERE virtuemart_order_id=" . $virtuemart_order_id;
+                $db = JFactory::getDBO();
+                $db->setQuery($email_sent);
+                $email_is_sent = $db->loadResult();
 
-        if ($statusResponse == "RESERVE") {
-
-            $email_sent = "SELECT email_sent FROM #__virtuemart_orders WHERE virtuemart_order_id=" . $virtuemart_order_id;
-            $db = JFactory::getDBO();
-            $db->setQuery($email_sent);
-            $email_is_sent = $db->loadResult();
-
-            if ($email_is_sent == null) {
-                if ($virtuemart_order_id) {
-                    // send the email only if payment has been accepted
-                    if (!class_exists('VirtueMartModelOrders'))
-                        require(JPATH_VM_ADMINISTRATOR . DS . 'models' . DS . 'orders.php');
-                    $modelOrder = new VirtueMartModelOrders();
-                    $order["order_status"] = "C";
-                    $order["virtuemart_order_id"] = $virtuemart_order_id;
-                    $order["customer_notified"] = 1;
-                    $order['comments'] = JText::sprintf('VMPAYMENT_VIPPS_PAYMENT_STATUS_CONFIRMED', $payment_data["orderid"]);
-                    $modelOrder->updateStatusForOneOrder($virtuemart_order_id, $order, true);
-
-                    $db = JFactory::getDBO();
-                    $q = "UPDATE #__virtuemart_orders SET email_sent = 1 WHERE virtuemart_order_id=" . $virtuemart_order_id;
-                    $db->setQuery($q);
-                    $db->query();
-
-                    function addSubscriptions($virtuemart_order_id)
+                if ($email_is_sent == null) {
+                    if($virtuemart_order_id)
                     {
-                        if (!class_exists('VirtueMartModelSubscription'))
-                            require(JPATH_VM_ADMINISTRATOR . DS . 'models' . DS . 'subscription.php');
+                        // send the email only if payment has been accepted
+                        if(!class_exists('VirtueMartModelOrders'))
+                            require(JPATH_VM_ADMINISTRATOR . DS . 'models' . DS . 'orders.php');
+                        $modelOrder = new VirtueMartModelOrders();
+                        $order["order_status"] = "C";
+                        $order["virtuemart_order_id"] = $virtuemart_order_id;
+                        $order["customer_notified"] = 1;
+                        $order['comments'] = JText::sprintf('VMPAYMENT_VIPPS_PAYMENT_STATUS_CONFIRMED', $payment_data["orderid"]);
+                        $modelOrder->updateStatusForOneOrder($virtuemart_order_id, $order, true);
 
-                        $subscriptionModel = new VirtueMartModelSubscription();
-                        $order_item_detail = $subscriptionModel->getOrderItemDetailByOrderId($virtuemart_order_id);
+                        $db = JFactory::getDBO();
+                        $q = "UPDATE #__virtuemart_orders SET email_sent = 1 WHERE virtuemart_order_id=" . $virtuemart_order_id;
+                        $db->setQuery($q);
+                        $db->query();
 
-                        foreach ($order_item_detail as $key => $value) {
+                        function addSubscriptions($virtuemart_order_id)
+                        {
+                            if(!class_exists('VirtueMartModelSubscription'))
+                                require (JPATH_VM_ADMINISTRATOR . DS . 'models' . DS . 'subscription.php');
 
-                            $product_attribute = json_decode($value['product_attribute'], true);
-                            $subscription_details['virtuemart_order_item_id'] = $value['virtuemart_order_item_id'];
+                            $subscriptionModel = new VirtueMartModelSubscription();
+                            $order_item_detail = $subscriptionModel->getOrderItemDetailByOrderId($virtuemart_order_id);
 
-                            foreach ($product_attribute as $key1 => $value1) {
+                            foreach ($order_item_detail as $key => $value) {
 
-                                $payment_subscription = 0;
-                                $subscription_type = 0;
+                                $product_attribute = json_decode($value['product_attribute'],true);
+                                $subscription_details['virtuemart_order_item_id'] = $value['virtuemart_order_item_id'];
 
-                                $q = 'SELECT product_attribute FROM #__virtuemart_order_items WHERE virtuemart_order_item_id ="' . $subscription_details['virtuemart_order_item_id'] . '" ';
-                                $db = JFactory::getDBO();
-                                $db->setQuery($q);
+                                foreach ($product_attribute as $key1 => $value1) {
 
-                                $product_attribute = $db->loadResult();
-                                $product_attribute_object = json_decode($product_attribute);
-                                $product_attribute_id = $product_attribute_object->{'103'};
-
-                                $q = 'SELECT customfield_value FROM #__virtuemart_product_customfields WHERE virtuemart_customfield_id ="' . $product_attribute_id . '" ';
-                                $db = JFactory::getDBO();
-                                $db->setQuery($q);
-                                $subscription_value = $db->loadResult();
-
-                                if (strpos($subscription_value, '2 ganger') !== false) {
-                                    $payment_subscription = 2;
-                                    $subscription_type = 2;
-                                } else if (strpos($subscription_value, '1 gang') !== false) {
-                                    $payment_subscription = 1;
-                                    $subscription_type = 1;
-                                } else {
                                     $payment_subscription = 0;
                                     $subscription_type = 0;
+
+                                    $q = 'SELECT product_attribute FROM #__virtuemart_order_items WHERE virtuemart_order_item_id ="'  . $subscription_details['virtuemart_order_item_id'] . '" ';
+                                    $db =  JFactory::getDBO();
+                                    $db->setQuery($q);
+
+                                    $product_attribute = $db->loadResult();
+                                    $product_attribute_object = json_decode($product_attribute);
+                                    $product_attribute_id = $product_attribute_object->{'103'};
+
+                                    $q = 'SELECT customfield_value FROM #__virtuemart_product_customfields WHERE virtuemart_customfield_id ="'  . $product_attribute_id . '" ';
+                                    $db =  JFactory::getDBO();
+                                    $db->setQuery($q);
+                                    $subscription_value = $db->loadResult();
+
+                                    if (strpos($subscription_value, '2 ganger' ) !== false ) {
+                                        $payment_subscription = 2;
+                                        $subscription_type = 2;
+                                    } else if(strpos($subscription_value, '1 gang') !== false ) {
+                                        $payment_subscription = 1;
+                                        $subscription_type = 1;
+                                    } else {
+                                        $payment_subscription = 0;
+                                        $subscription_type = 0;
+                                    }
+
+                                    $order_subscription_id = $subscriptionModel->checkIfProductSubscriptionPresent($subscription_details);
+
+                                    if(empty($order_subscription_id) && $subscription_type !== 0) {
+                                        $subscription_details['created_on'] = date("Y-m-d H:i:s");
+                                        $subscription_details['subscriptionid'] = $subscription_details['virtuemart_order_item_id'];
+                                        $subscription_details['subscription_type'] = $subscription_type;
+                                        $subscription_details['card_expiry_month'] = '';
+                                        $subscription_details['card_expiry_year'] = '';
+                                        $order_subscription_id = $subscriptionModel->insertSubscriptionDetails($subscription_details);
+                                        $subscription_details['virtuemart_order_subscription_id'] = $order_subscription_id;
+                                    }
+
                                 }
 
-                                $order_subscription_id = $subscriptionModel->checkIfProductSubscriptionPresent($subscription_details);
-
-                                if (empty($order_subscription_id) && $subscription_type !== 0) {
-                                    $subscription_details['created_on'] = date("Y-m-d H:i:s");
-                                    $subscription_details['subscriptionid'] = 'vipps-' . $subscription_details['virtuemart_order_item_id'];
-                                    $subscription_details['subscription_type'] = $subscription_type;
-                                    $subscription_details['card_expiry_month'] = '';
-                                    $subscription_details['card_expiry_year'] = '';
-                                    $order_subscription_id = $subscriptionModel->insertSubscriptionDetails($subscription_details);
-                                    $subscription_details['virtuemart_order_subscription_id'] = $order_subscription_id;
-                                }
 
                             }
-
-
                         }
+
+                        addSubscriptions($virtuemart_order_id);
+
                     }
-
-                    addSubscriptions($virtuemart_order_id);
-
                 }
+
+                function capturePayment($payment_params,$virtuemart_order_id,$token)
+                {
+                    $body = array(
+                        'merchantInfo' =>
+                            array(
+                                'merchantSerialNumber' => $payment_params['merchantSerialNumber'],
+                            ),
+                        'transaction' =>
+                            array(
+                                'transactionText' => 'Captured',
+                            ),
+                    );
+
+                    $curl = curl_init();
+                    curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($body));
+                    curl_setopt($curl, CURLOPT_URL, $payment_params['baseUrl'] . '/ecomm/v2/payments/'.$virtuemart_order_id.'/capture');
+                    curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
+                    curl_setopt($curl, CURLOPT_HTTPHEADER, array(
+                        // Request headers
+                        'Authorization: ' . $token["token_type"] . ' ' . $token["access_token"],
+                        'X-Request-Id: ',
+                        'X-TimeStamp: ',
+                        'Content-Type: application/json',
+                        'Ocp-Apim-Subscription-Key: ' . $payment_params['Ocp-Apim-Subscription-Key'],
+                    ));
+                    curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+                    $result = curl_exec($curl);
+                    if (!$result) {
+                        die("Connection Failure");
+                    }
+                    curl_close($curl);
+                    return $result;
+                }
+                $capturePayment = capturePayment($payment_params,$virtuemart_order_id,$token);
+
+
+                $db =  JFactory::getDBO();
+                $query = "SELECT * FROM #__virtuemart_orders WHERE virtuemart_order_id =" . $virtuemart_order_id;
+                $db->setQuery($query);
+                $payment = $db->loadObject();
+
+                $html = $this->_getPaymentResponseHtml($payment);
+
             }
+            else {
+                header('Location: '.$payment_params['fallBack']);
 
-            $db = JFactory::getDBO();
-            $query = "SELECT * FROM #__virtuemart_orders WHERE virtuemart_order_id =" . $virtuemart_order_id;
-            $db->setQuery($query);
-            $payment = $db->loadObject();
-
-            $html = $this->_getPaymentResponseHtml($payment);
-
-        } else {
-            header('Location: ' . $payment_params['fallBack']);
-
+            }
         }
 
     }
@@ -486,10 +527,9 @@ class plgVmPaymentVipps extends vmPSPlugin
         $html = '<table>' . "\n";
         $html .= $this->getHtmlRow(JText::sprintf('COM_VIRTUEMART_ORDER_PRINT_PAYMENT_LBL'), 'Vipps Express Checkout');
         $html .= $this->getHtmlRow(JText::sprintf('COM_VIRTUEMART_ORDER_LIST_ORDER_NUMBER'), $payment->order_number);
-        $html .= $this->getHtmlRow(JText::sprintf('COM_VIRTUEMART_ORDER_PRINT_SUBTOTAL'), number_format($payment->order_total, 2) . ' Kr');
-        $html .= $this->getHtmlRow(JText::sprintf('COM_VIRTUEMART_ORDER_PRINT_SHIPPING'), $payment->order_shipment + $payment->order_shipment_tax . ' Kr');
-        $html .= $this->getHtmlRow(JText::sprintf('COM_VIRTUEMART_ORDER_PRINT_TOTAL_TAX'), number_format($payment->order_billTaxAmount, 2) . ' Kr');
-        $html .= $this->getHtmlRow(JText::sprintf('COM_VIRTUEMART_ORDER_PRINT_TOTAL'), number_format($payment->order_total, 2) . ' Kr');
+        $html .= $this->getHtmlRow(JText::sprintf('COM_VIRTUEMART_ORDER_PRINT_SHIPPING'),  $payment->order_shipment + $payment->order_shipment_tax. ' Kr');
+        $html .= $this->getHtmlRow(JText::sprintf('COM_VIRTUEMART_ORDER_PRINT_TOTAL_TAX'),  number_format($payment->order_billTaxAmount, 2). ' Kr');
+        $html .= $this->getHtmlRow(JText::sprintf('COM_VIRTUEMART_ORDER_PRINT_TOTAL'),  number_format($payment->order_total, 2). ' Kr');
         $html .= '</table>' . "\n";
         return $html;
     }
@@ -784,4 +824,6 @@ class plgVmPaymentVipps extends vmPSPlugin
 
         return $this->setOnTablePluginParams($name, $id, $table);
     }
+
+
 }
